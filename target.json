@@ -1,0 +1,12 @@
+{
+    "web": {
+        "baseUrl": "https://restream.sloppy.zone/#/login",
+        "user": "restream34@mailinator.com",
+        "pass": "qwerty"
+    },
+    "rest": {
+        "baseUrl": "https://restream.sloppy.zone/rest/{}/{}",
+        "user": "restream34@mailinator.com",
+        "pass": "qwerty"
+    }
+}
