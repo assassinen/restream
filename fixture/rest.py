@@ -1,30 +1,100 @@
 import requests
-
+from model.product import Product
+import os.path
+import jsonpickle
 
 class Rest:
 
     def __init__(self, base_url, username, password):
         self.base_url = base_url
-        self.search_url = base_url.format('product', 'search')
+        self.search_url = base_url.format('rest', 'product', 'search')
         self.username = username
         self.password = password
         self.login()
+        self.basketItem = []
+        self.basketItemId = []
 
 
     def login(self):
         data = {'email': self.username, 'password': self.password}
-        url = self.base_url.format('user', 'login')
+        url = self.base_url.format('rest','user', 'login')
         responce = requests.post(url, json=data)
         if responce.status_code == 200:
             self.basket_id = responce.json()['authentication']['bid']
             self.token = responce.json()['authentication']['token']
-            self.basket_url = self.base_url.format('basket', self.basket_id)
+            self.basket_url = self.base_url.format('rest', 'basket', self.basket_id)
+            self.headers = {'Authorization': 'Bearer {}'.format(self.token)}
+
+
+    def get_status_code(self, pattert = ''):
+        self.search(pattert)
+        return self.status_code
 
 
     def search(self, pattert = ''):
         url = self.search_url + '?q=' + pattert
         responce = requests.get(url)
-        return responce.json()
+        self.status_code = responce.status_code
+        if responce.status_code == 200:
+            return responce.json()['data']
+
+
+    def get_product_list(self, pattert = ''):
+        list=[]
+        products = self.search(pattert)
+        for product in products:
+            (id, name, description, price, image, _, _, _) = product.values()
+            product_kwargs = dict(zip(['id', 'name', 'description', 'price', 'image'], [id, name, description, price, image]))
+            list.append(Product(**product_kwargs))
+        return list
+
+
+    def load_from_json(self, file):
+        testdata_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/%s.json" % file)
+        with open(testdata_file) as f:
+            return jsonpickle.decode(f.read())
+
+
+    def get_basket_items(self):
+        responce = requests.get(url=self.basket_url, headers=self.headers)
+        if responce.status_code == 200:
+            return responce.json()['data']['products']
+
+
+    def add_product(self, product=None):
+        if product is None:
+            return False
+
+        self.basketItem = {i['basketItem']['ProductId']: i['basketItem']['quantity'] for i in self.get_basket_items()}
+        self.basketItemId = {i['basketItem']['ProductId']: i['basketItem']["id"] for i in self.get_basket_items()}
+        product_id = product.id_or_max()
+        if product_id not in self.basketItem:
+            quantity = 1
+            data = {"ProductId": product_id, "BasketId": self.basket_id, "quantity": quantity}
+            url = self.base_url.format('api', 'BasketItems', '')
+            responce = requests.post(url, json=data, headers=self.headers)
+        else:
+            quantity = self.basketItem[product_id] + 1
+            basketItemId = self.basketItemId[product_id]
+            data = {"quantity": quantity}
+            url = self.base_url.format('api', 'BasketItems', basketItemId)
+            responce = requests.put(url, json=data, headers=self.headers)
+
+        if responce.status_code == 200:
+            return True
+
+
+
+    def get_basket_products(self):
+        list = []
+        products = self.get_basket_items()
+        for product in products:
+            (id, name, description, price, image, _, _, _, _) = product.values()
+            product_kwargs = dict(zip(['id', 'name', 'description', 'price', 'image'], [id, name, description, price, image]))
+            list.append(Product(**product_kwargs))
+        return list
+
+
 
 
 

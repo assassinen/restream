@@ -1,6 +1,7 @@
 
 from selenium import webdriver
 from fixture.session import SessionHelper
+from fixture.product import ProductHelper
 
 
 class Application:
@@ -18,6 +19,7 @@ class Application:
         self.base_url = base_url
 
         self.session = SessionHelper(self)
+        self.product = ProductHelper(self)
 
     def open_home_page(self):
         wd = self.wd
@@ -25,3 +27,10 @@ class Application:
 
     def destroy(self):
         self.wd.quit()
+
+    def is_valid(self):
+        try:
+            self.wd.current_url
+            return True
+        except:
+            return False

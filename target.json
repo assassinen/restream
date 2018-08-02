@@ -5,8 +5,11 @@
         "pass": "qwerty"
     },
     "rest": {
-        "baseUrl": "https://restream.sloppy.zone/rest/{}/{}",
+        "baseUrl": "https://restream.sloppy.zone/{}/{}/{}",
         "user": "restream34@mailinator.com",
         "pass": "qwerty"
+    },
+    "json_data": {
+        "product": "all_product"
     }
 }

@@ -1,8 +1,10 @@
 import pytest
 from fixture.application import Application
 from fixture.rest import Rest
+from fixture.json import JsonFixtures
 import json
 import os.path
+import jsonpickle
 
 
 fixture = None
@@ -16,7 +18,6 @@ def load_config(file):
         with open(config_file) as file:
             target = json.load(file)
     return target
-
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -51,3 +52,25 @@ def pytest_addoption(parser):
     parser.addoption("--browser", action="store", default="chrome")
     parser.addoption("--target", action="store", default="target.json")
     parser.addoption("--check_ui", action="store_true")
+
+
+@pytest.fixture(scope="session")
+def data_from_json(request):
+    json_config = load_config(request.config.getoption("--target"))['json_data']
+    testdata_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/%s.json" % json_config["product"])
+    jsonfixture = JsonFixtures(testdata_file)
+    return jsonfixture
+
+
+def pytest_generate_tests(metafunc):
+    for fixture in metafunc.fixturenames:
+        if fixture.startswith("json_"):
+            testdata = load_from_json(fixture[5:])
+            metafunc.parametrize(fixture, testdata, ids=[str(x) for x in testdata])
+
+
+def load_from_json(file):
+    testdata_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/%s.json" % file)
+    with open(testdata_file) as f:
+        return jsonpickle.decode(f.read())
+
